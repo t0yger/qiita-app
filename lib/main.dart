@@ -62,70 +62,41 @@ class _MyHomePageState extends State<MyHomePage> {
         itemCount: entries.length,
         itemBuilder: (BuildContext context, int index) {
           return Container(
-              height: 150,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Colors.red,
-                  width: 1.0,
-                ),
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: Colors.black,
-                    width: 1.0,
+            height: 150,
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const CircleAvatar(
+                    radius: 25,
+                    backgroundImage:
+                        NetworkImage('https://picsum.photos/200/300')),
+                const SizedBox(width: 24),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Container(
+                          alignment: Alignment.centerLeft,
+                          child: const Text(
+                            'article title',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 24),
+                          )),
+                      Container(
+                          alignment: Alignment.centerLeft,
+                          child: const Text(
+                            'tags',
+                            style: TextStyle(color: Colors.grey),
+                          )),
+                      const SizedBox(height: 8),
+                      Container(
+                          alignment: Alignment.centerLeft,
+                          child: const Text('headline')),
+                    ],
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Image.network(
-                      'https://picsum.photos/200/300',
-                      fit: BoxFit.cover,
-                    ),
-                    Expanded(
-                        child: Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Colors.green,
-                          width: 1.0,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                              alignment: Alignment.centerLeft,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: Colors.yellow,
-                                  width: 1.0,
-                                ),
-                              ),
-                              child: const Text('article title')),
-                          Container(
-                              alignment: Alignment.centerLeft,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: Colors.blue,
-                                  width: 1.0,
-                                ),
-                              ),
-                              child: const Text('tags')),
-                          Container(
-                              alignment: Alignment.centerLeft,
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: Colors.grey,
-                                  width: 1.0,
-                                ),
-                              ),
-                              child: const Text('headline')),
-                        ],
-                      ),
-                    ))
-                  ],
-                ),
-              ));
+                )
+              ],
+            ),
+          );
         },
         separatorBuilder: (BuildContext context, int index) => const Divider(),
       ),
