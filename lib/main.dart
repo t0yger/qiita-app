@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:qiita_app/article.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,6 +19,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.lightGreen,
       ),
+      routes: {ArticleWebView.routeName: (context) => const ArticleWebView()},
       home: const MyHomePage(title: '記事一覧'),
     );
   }
@@ -60,52 +62,58 @@ class _MyHomePageState extends State<MyHomePage> {
         padding: const EdgeInsets.all(8),
         itemCount: items.length,
         itemBuilder: (BuildContext context, int index) {
-          return Container(
-            height: 150,
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                CircleAvatar(
-                    radius: 25,
-                    backgroundImage: NetworkImage(
-                        items[index]['user']['profile_image_url'])),
-                const SizedBox(width: 24),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Container(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            items[index]['title'],
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 24),
-                          )),
-                      Container(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            items[index]['tags']
-                                .map((tag) => tag['name'])
-                                .join(','),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                            style: const TextStyle(color: Colors.grey),
-                          )),
-                      const SizedBox(height: 8),
-                      Container(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            items[index]['body'],
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
-                          )),
-                    ],
+          return InkWell(
+              onTap: () => Navigator.pushNamed(
+                    context,
+                    ArticleWebView.routeName,
+                    arguments: ArticleArguments(items[index]['url']),
                   ),
-                )
-              ],
-            ),
-          );
+              child: Container(
+                height: 150,
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                        radius: 25,
+                        backgroundImage: NetworkImage(
+                            items[index]['user']['profile_image_url'])),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Container(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                items[index]['title'],
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 24),
+                              )),
+                          Container(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                items[index]['tags']
+                                    .map((tag) => tag['name'])
+                                    .join(','),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                style: const TextStyle(color: Colors.grey),
+                              )),
+                          const SizedBox(height: 8),
+                          Container(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                items[index]['body'],
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              )),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+              ));
         },
         separatorBuilder: (BuildContext context, int index) => const Divider(),
       ),
