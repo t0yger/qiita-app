@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:qiita_app/article.dart';
+import 'package:qiita_app/article_list_item.dart';
 
 void main() {
   runApp(const MyApp());
@@ -34,22 +36,40 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  List items = [];
+  static const _perPage = 20;
 
-  Future<void> getArticles() async {
-    var url =
-        Uri.https('qiita.com', 'api/v2/items', {'page': '1', 'per_page': '20'});
-    var response = await http.get(url);
+  final PagingController<int, ArticleListItem> _pagingController =
+      PagingController(firstPageKey: 1);
 
-    setState(() {
-      items = jsonDecode(response.body);
-    });
+  Future<void> getArticles(int pageKey) async {
+    print(pageKey);
+    try {
+      var url = Uri.https('qiita.com', 'api/v2/items',
+          {'page': '$pageKey', 'per_page': '$_perPage'});
+      var response = await http.get(url);
+      final newItems = jsonDecode(response.body);
+      final articleListItems = newItems
+          .map((item) => ArticleListItem.fromJson(item))
+          .cast<ArticleListItem>()
+          .toList();
+      final isLastPage = articleListItems.length < _perPage;
+      if (isLastPage) {
+        _pagingController.appendLastPage(articleListItems);
+      } else {
+        final nextPageKey = pageKey + 1;
+        _pagingController.appendPage(articleListItems, nextPageKey);
+      }
+    } catch (error) {
+      print(error);
+      _pagingController.error = error;
+    }
   }
 
   @override
   void initState() {
     super.initState();
-    getArticles();
+    _pagingController
+        .addPageRequestListener((pageKey) => {getArticles(pageKey)});
   }
 
   @override
@@ -58,64 +78,60 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(8),
-        itemCount: items.length,
-        itemBuilder: (BuildContext context, int index) {
-          return InkWell(
-              onTap: () => Navigator.pushNamed(
-                    context,
-                    ArticleWebView.routeName,
-                    arguments: ArticleArguments(items[index]['url']),
+      body: PagedListView(
+        pagingController: _pagingController,
+        builderDelegate: PagedChildBuilderDelegate<ArticleListItem>(
+            itemBuilder: (context, item, index) => InkWell(
+                onTap: () => Navigator.pushNamed(
+                      context,
+                      ArticleWebView.routeName,
+                      arguments: ArticleArguments(item.url ?? ""),
+                    ),
+                child: Container(
+                  height: 150,
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                          radius: 25,
+                          backgroundImage:
+                              NetworkImage(item.profileImageUrl ?? "")),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Container(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  item.title ?? "",
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 24),
+                                )),
+                            Container(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  item.tags ?? "",
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  style: const TextStyle(color: Colors.grey),
+                                )),
+                            const SizedBox(height: 8),
+                            Container(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  item.body ?? "",
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                )),
+                          ],
+                        ),
+                      )
+                    ],
                   ),
-              child: Container(
-                height: 150,
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                        radius: 25,
-                        backgroundImage: NetworkImage(
-                            items[index]['user']['profile_image_url'])),
-                    const SizedBox(width: 24),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          Container(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                items[index]['title'],
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 24),
-                              )),
-                          Container(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                items[index]['tags']
-                                    .map((tag) => tag['name'])
-                                    .join(','),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                                style: const TextStyle(color: Colors.grey),
-                              )),
-                          const SizedBox(height: 8),
-                          Container(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                items[index]['body'],
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              )),
-                        ],
-                      ),
-                    )
-                  ],
-                ),
-              ));
-        },
-        separatorBuilder: (BuildContext context, int index) => const Divider(),
+                ))),
       ),
       floatingActionButton: const FloatingActionButton(
         onPressed: null,
