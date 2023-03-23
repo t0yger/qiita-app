@@ -1,6 +1,6 @@
 class Article {
   final String? body;
-  final String? tags;
+  final List<String>? tags;
   final String? title;
   final String? url;
   final String? profileImageUrl;

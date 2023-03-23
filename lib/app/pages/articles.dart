@@ -1,57 +1,30 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
-import 'package:qiita_app/article.dart';
-import 'package:qiita_app/article_list_item.dart';
+import 'package:qiita_app/data/entities/article_list_item.dart';
+import 'package:qiita_app/domain/usecases/articles_usecase.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+import 'article.dart';
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Qiita App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.lightGreen,
-      ),
-      routes: {ArticleWebView.routeName: (context) => const ArticleWebView()},
-      home: const MyHomePage(title: '記事一覧'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class Articles extends StatefulWidget {
+  const Articles({super.key, required this.title, required this.usecase});
   final String title;
+  final ArticlesUsecase usecase;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<Articles> createState() => _ArticlesState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _ArticlesState extends State<Articles> {
   static const _perPage = 20;
 
   final PagingController<int, ArticleListItem> _pagingController =
       PagingController(firstPageKey: 1);
 
   Future<void> getArticles(int pageKey) async {
-    print(pageKey);
     try {
-      var url = Uri.https('qiita.com', 'api/v2/items',
-          {'page': '$pageKey', 'per_page': '$_perPage'});
-      var response = await http.get(url);
-      final newItems = jsonDecode(response.body);
-      final articleListItems = newItems
-          .map((item) => ArticleListItem.fromJson(item))
-          .cast<ArticleListItem>()
-          .toList();
+      final articleListItems = await widget.usecase
+          .getArticles(pageKey.toString(), _perPage.toString());
       final isLastPage = articleListItems.length < _perPage;
       if (isLastPage) {
         _pagingController.appendLastPage(articleListItems);
@@ -63,6 +36,25 @@ class _MyHomePageState extends State<MyHomePage> {
       print(error);
       _pagingController.error = error;
     }
+  }
+
+  void onTapItem(ArticleListItem item) {
+    if (item.url == null) {
+      Fluttertoast.showToast(
+          msg: "err: url does not exist",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          timeInSecForIosWeb: 1,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0);
+      return;
+    }
+    Navigator.pushNamed(
+      context,
+      ArticleWebView.routeName,
+      arguments: ArticleArguments(item.url!),
+    );
   }
 
   @override
@@ -82,11 +74,7 @@ class _MyHomePageState extends State<MyHomePage> {
         pagingController: _pagingController,
         builderDelegate: PagedChildBuilderDelegate<ArticleListItem>(
             itemBuilder: (context, item, index) => InkWell(
-                onTap: () => Navigator.pushNamed(
-                      context,
-                      ArticleWebView.routeName,
-                      arguments: ArticleArguments(item.url ?? ""),
-                    ),
+                onTap: () => onTapItem(item),
                 child: Container(
                   height: 150,
                   padding: const EdgeInsets.all(16),
@@ -94,8 +82,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     children: [
                       CircleAvatar(
                           radius: 25,
-                          backgroundImage:
-                              NetworkImage(item.profileImageUrl ?? "")),
+                          backgroundImage: NetworkImage(item.profileImageUrl)),
                       const SizedBox(width: 24),
                       Expanded(
                         child: Column(
@@ -103,7 +90,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             Container(
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  item.title ?? "",
+                                  item.title,
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                   style: const TextStyle(
@@ -113,7 +100,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             Container(
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  item.tags ?? "",
+                                  item.tags,
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                   style: const TextStyle(color: Colors.grey),
@@ -122,7 +109,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             Container(
                                 alignment: Alignment.centerLeft,
                                 child: Text(
-                                  item.body ?? "",
+                                  item.body,
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                 )),

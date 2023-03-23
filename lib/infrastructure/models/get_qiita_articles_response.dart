@@ -1,9 +1,3 @@
-class GetQiitaArticlesResponse {
-  final List<QiitaArticleResponseData> items;
-
-  GetQiitaArticlesResponse(this.items);
-}
-
 class QiitaArticleResponseData {
   final String? renderedBody;
   final String? body;
